@@ -27,3 +27,10 @@ def create_refresh_token(subject: Union[str, Any]) -> str:
     to_encode = {"exp": expires_at, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, JWT_REFRESH_SECRET_KEY, ALGORITHM)
     return encoded_jwt
+def authenticate_user(fake_db, username: str, password: str):
+    user = get_user(fake_db, username)
+    if not user:
+        return False
+    if not verify_password(password, user.hashed_password):
+        return False
+    return user

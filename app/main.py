@@ -1,5 +1,8 @@
+from datetime import timedelta
+from typing import Annotated
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from openai import models
 from requests import Session
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,14 +27,14 @@ from app.Admin.Service.adminService import AdminService, AdminAlreadyExistsExcep
 from app.Student.Service.studentService import StudentService, StudentAlreadyExistsException, StudentNotFoundException, StudentIdNotFoundException, NoStudentsFoundException
 from app.Teacher.Service.teacherService import TeacherService, TeacherAlreadyExistsException, TeacherNotFoundException, TeacherIdNotFoundException, NoTeachersFoundException
 from app.exceptions import EntityNotFoundException, entity_not_found_exception
-from app.schemas import CreateTemplate, Organisation, CreateOrganisation, CreateAdmin, CreateTeacher, CreateCourse, CreateAssignment, UpdateTeacher, CreateSubmission, CreateStudent, UserCreate, UserLogin, TokenCreate, ChangePassword, TokenSchema
+from app.schemas import CreateTemplate, Organisation, CreateOrganisation, CreateAdmin, CreateTeacher, CreateCourse, CreateAssignment, UpdateTeacher, CreateSubmission, CreateStudent, UserCreate, UserLogin, TokenCreate, TokenSchema
 import asyncio
 from app.models import Base, User
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
-from app.utils import get_hashed_password, verify_password
-from auth_bearer import JWTBearer
+from app.utils import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access_token, get_hashed_password, verify_password
+from app.auth_bearer import JWTBearer
 
 load_dotenv()
 openai_api_key=os.getenv('OPENAI_API_KEY', 'YourAPIKey')
@@ -741,7 +744,7 @@ app.add_event_handler("startup", startup_event)
 
 #register
 @app.post("/register")
-async def register_user(user: schemas.UserCreate, session: AsyncSession = Depends(get_async_db)):
+async def register_user(user: UserCreate, session: AsyncSession = Depends(get_async_db)):
     existing_user = await session.execute(
         models.User.select().where(models.User.c.email == user.email)
     )
@@ -763,18 +766,30 @@ def getusers( dependencies=Depends(JWTBearer()),session: Session = Depends(db_se
     user = session.query(models.User).all()
     return user
 
-#changepassword
-@app.post('/change-password')
-def change_password(request: ChangePassword, db: Session = Depends(db_session)):
-    user = db.query(models.User).filter(models.User.email == request.email).first()
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
-    
-    if not verify_password(request.old_password, user.password):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid old password")
-    
-    encrypted_password = get_hashed_password(request.new_password)
-    user.password = encrypted_password
-    db.commit()
-    
-    return {"message": "Password changed successfully"}
+fake_users_db = {
+    "johndoe": {
+        "username": "johndoe",
+        "full_name": "John Doe",
+        "email": "johndoe@example.com",
+        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+        "disabled": False,
+    }
+}
+
+#login
+@app.post("/login")
+async def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+) -> TokenSchema:
+    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return TokenSchema(access_token=access_token, token_type="bearer")

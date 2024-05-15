@@ -13,18 +13,12 @@ class UserLogin (BaseModel):
 class TokenSchema(BaseModel):
     access_token: str
     refresh_token: str
-
-class ChangePassword(BaseModel):
-    email: str
-    old_password: str
-    new_password: str
-
 class TokenCreate(BaseModel):
     user_id: int
     access_token: str
     refresh_token: str
     status: bool
-    created_date: datetime.utcnow.now
+    created_date: datetime = Field(default_factory=datetime.utcnow)
 # Command models for creating/updating data
 class CreateOrganisation(BaseModel):
     name: str

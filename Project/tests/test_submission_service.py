@@ -1,11 +1,11 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, clear_mappers
+from app.Submission.Service.submissionService import SubmissionService
 from app.models import Base, Submission, Assignment, Student, Feedback
 from app.schemas import CreateSubmission, Submission as SubmissionSchema
-from app.submissionRepo import SubmissionRepository
-from app.feedbackRepo import FeedbackRepository
-from app.submissionService import SubmissionService
+
+
 
 
 @pytest.fixture
