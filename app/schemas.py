@@ -2,6 +2,29 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
+# Command models for Login and registering
+class UserCreate (BaseModel):
+    username: str
+    email: str
+    password: str
+class UserLogin (BaseModel):
+    email: str
+    password: str
+class TokenSchema(BaseModel):
+    access_token: str
+    refresh_token: str
+
+class ChangePassword(BaseModel):
+    email: str
+    old_password: str
+    new_password: str
+
+class TokenCreate(BaseModel):
+    user_id: int
+    access_token: str
+    refresh_token: str
+    status: bool
+    created_date: datetime.utcnow.now
 # Command models for creating/updating data
 class CreateOrganisation(BaseModel):
     name: str
@@ -193,3 +216,5 @@ class UpdateTeacher(BaseModel):
     email: Optional[str] = None
     password: Optional[str] = None
     organisation_id: Optional[int] = None
+
+    #

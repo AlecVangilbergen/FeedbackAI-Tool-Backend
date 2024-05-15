@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.responses import JSONResponse
+from openai import models
+from requests import Session
 from sqlalchemy.ext.asyncio import AsyncSession
+from Project.tests.test_submission_service import db_session
 from app.Admin.Service.adminService import AdminService
 from app.Assignment.Service.assignmentService import AssignmentService, UniqueAssignmentTitlePerCourseException, unique_assignment_title_per_course_id_combination_exception_handler
 from app.Course.Service.courseService import CourseService, UniqueCourseNameAndTeacherIdCombinationExcepton, unique_course_name_and_teacher_id_combination_exception_handler
@@ -21,13 +24,14 @@ from app.Admin.Service.adminService import AdminService, AdminAlreadyExistsExcep
 from app.Student.Service.studentService import StudentService, StudentAlreadyExistsException, StudentNotFoundException, StudentIdNotFoundException, NoStudentsFoundException
 from app.Teacher.Service.teacherService import TeacherService, TeacherAlreadyExistsException, TeacherNotFoundException, TeacherIdNotFoundException, NoTeachersFoundException
 from app.exceptions import EntityNotFoundException, entity_not_found_exception
-from app.schemas import CreateTemplate, Organisation, CreateOrganisation, CreateAdmin, CreateTeacher, CreateCourse, CreateAssignment, UpdateTeacher, CreateSubmission, CreateStudent
+from app.schemas import CreateTemplate, Organisation, CreateOrganisation, CreateAdmin, CreateTeacher, CreateCourse, CreateAssignment, UpdateTeacher, CreateSubmission, CreateStudent, UserCreate, UserLogin, TokenCreate, ChangePassword, TokenSchema
 import asyncio
-from app.models import Base
+from app.models import Base, User
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
-
+from app.utils import get_hashed_password, verify_password
+from auth_bearer import JWTBearer
 
 load_dotenv()
 openai_api_key=os.getenv('OPENAI_API_KEY', 'YourAPIKey')
@@ -734,3 +738,43 @@ async def startup_event():
 app.add_event_handler("startup", startup_event)
 
 # Note: No need for the if __name__ == "__main__": block
+
+#register
+@app.post("/register")
+async def register_user(user: schemas.UserCreate, session: AsyncSession = Depends(get_async_db)):
+    existing_user = await session.execute(
+        models.User.select().where(models.User.c.email == user.email)
+    )
+    existing_user = existing_user.scalar_one_or_none()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    encrypted_password = get_hashed_password(user.password)
+
+    new_user = models.User(username=user.username, email=user.email, password=encrypted_password)
+    session.add(new_user)
+    await session.commit()
+    await session.refresh(new_user)
+
+    return {"message": "user created successfully"}
+# authenticatie
+@app.get('/getusers')
+def getusers( dependencies=Depends(JWTBearer()),session: Session = Depends(db_session)):
+    user = session.query(models.User).all()
+    return user
+
+#changepassword
+@app.post('/change-password')
+def change_password(request: ChangePassword, db: Session = Depends(db_session)):
+    user = db.query(models.User).filter(models.User.email == request.email).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
+    
+    if not verify_password(request.old_password, user.password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid old password")
+    
+    encrypted_password = get_hashed_password(request.new_password)
+    user.password = encrypted_password
+    db.commit()
+    
+    return {"message": "Password changed successfully"}

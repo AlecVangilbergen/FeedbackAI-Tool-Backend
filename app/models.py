@@ -1,4 +1,4 @@
-from sqlalchemy import TIMESTAMP, UniqueConstraint, create_engine, Column, Integer, String, ForeignKey, Text, DateTime
+from sqlalchemy import TIMESTAMP, Boolean, UniqueConstraint, create_engine, Column, Integer, String, ForeignKey, Text, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -101,3 +101,17 @@ class Admin(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
     role = Column(String, default="admin")
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    password = Column(String)
+
+class TokenTable(Base):
+    __tablename__ = "token"
+    user_id = Column(Integer)
+    access_token = Column(String, primary_key=True)
+    refresh_token = Column(String, nullable=False)
+    status = Column(Boolean, default=True)
+    created_date = Column(DateTime, default=datetime.utcnow)
