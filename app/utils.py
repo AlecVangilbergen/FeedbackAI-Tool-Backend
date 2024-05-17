@@ -42,6 +42,6 @@ async def get_user(db: AsyncSession, username: str) -> Optional[User]:
 
 async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[User]:
     user = await get_user(db, username)
-    if not user or not verify_password(password, user.password):  # Ensure the actual password value is accessed
+    if not user or not verify_password(password, user.password):
         return None
     return user
