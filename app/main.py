@@ -1,8 +1,9 @@
 from datetime import timedelta
 from typing import Annotated, Optional
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, Security, status
 from fastapi.responses import JSONResponse
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+import jwt
 from openai import models
 from requests import Session
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,7 +42,7 @@ from app.utils import (
     get_hashed_password,
     verify_password,
 )
-from app.auth_bearer import JWTBearer
+from app.auth_bearer import ALGORITHM, JWT_SECRET_KEY, JWTBearer
 
 load_dotenv()
 openai_api_key=os.getenv('OPENAI_API_KEY', 'YourAPIKey')
@@ -765,11 +766,14 @@ async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_d
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
     hashed_password = get_hashed_password(user.password)
-    new_user = User(email=user.email, username=user.username, password=hashed_password)
+    new_user = User(email=user.email, hashed_password=hashed_password)
+    
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+    
     return new_user
+
 
 async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[User]:
     query = select(User).where(User.email == username)
@@ -778,16 +782,34 @@ async def authenticate_user(db: AsyncSession, username: str, password: str) -> O
     if user and verify_password(password, user.hashed_password):
         return user
     return None
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-@app.post("/login", response_model=TokenSchema)
+@app.post("/login", response_model=TokenCreate)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_async_db)):
     user = await authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
     access_token = create_access_token(subject=user.username)
     refresh_token = create_refresh_token(subject=user.username)
-    return {"access_token": access_token, "refresh_token": refresh_token}
+    
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+@app.get("/users/me")
+async def read_users_me(token: str = Security(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except jwt.PyJWTError:
+        raise credentials_exception
+    return {"username": username}
