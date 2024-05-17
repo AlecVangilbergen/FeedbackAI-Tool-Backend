@@ -33,7 +33,13 @@ from app.models import Base, User
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
-from app.utils import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access_token, get_hashed_password, verify_password
+from app.utils import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    authenticate_user,
+    create_access_token,
+    get_hashed_password,
+    verify_password,
+)
 from app.auth_bearer import JWTBearer
 
 load_dotenv()
@@ -742,54 +748,45 @@ app.add_event_handler("startup", startup_event)
 
 # Note: No need for the if __name__ == "__main__": block
 
-#register
-@app.post("/register")
-async def register_user(user: UserCreate, session: AsyncSession = Depends(get_async_db)):
-    existing_user = await session.execute(
-        models.User.select().where(models.User.c.email == user.email)
-    )
-    existing_user = existing_user.scalar_one_or_none()
+# AUTHENTICATION
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
+
+@app.post("/register", response_model=UserCreate)
+async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_db)):
+    query = select(User).where(User.email == user.email)
+    result = await db.execute(query)
+    existing_user = result.scalars().first()
+    
     if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
-    encrypted_password = get_hashed_password(user.password)
+    hashed_password = get_hashed_password(user.password)
+    new_user = User(email=user.email, hashed_password=hashed_password)
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+    return new_user
 
-    new_user = models.User(username=user.username, email=user.email, password=encrypted_password)
-    session.add(new_user)
-    await session.commit()
-    await session.refresh(new_user)
+async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[User]:
+    query = select(User).where(User.email == username)
+    result = await db.execute(query)
+    user = result.scalars().first()
+    if user and verify_password(password, user.hashed_password):
+        return user
+    return None
 
-    return {"message": "user created successfully"}
-# authenticatie
-@app.get('/getusers')
-def getusers( dependencies=Depends(JWTBearer()),session: Session = Depends(db_session)):
-    user = session.query(models.User).all()
-    return user
-
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-        "disabled": False,
-    }
-}
-
-#login
-@app.post("/login")
-async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-) -> TokenSchema:
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+@app.post("/login", response_model=TokenSchema)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_async_db)):
+    user = await authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return TokenSchema(access_token=access_token, token_type="bearer")
+    return {"access_token": access_token, "token_type": "bearer"}
