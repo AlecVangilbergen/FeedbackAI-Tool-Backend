@@ -1,12 +1,12 @@
 import os
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-from typing import Union, Any
+from typing import Optional, Union, Any
 import jwt
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from db import SessionLocal, async_engine, Base
-from models import User  # Ensure you import User from the correct module
+from app.database import SessionLocal, async_engine, Base
+from app.models import User 
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
 REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
@@ -36,14 +36,12 @@ def create_refresh_token(subject: Union[str, Any]) -> str:
     encoded_jwt = jwt.encode(to_encode, JWT_REFRESH_SECRET_KEY, ALGORITHM)
     return encoded_jwt
 
-async def get_user(db: AsyncSession, username: str):
+async def get_user(db: AsyncSession, username: str) -> Optional[User]:
     result = await db.execute(select(User).where(User.username == username))
     return result.scalars().first()
 
-async def authenticate_user(db: AsyncSession, username: str, password: str):
+async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[User]:
     user = await get_user(db, username)
-    if not user:
-        return False
-    if not verify_password(password, user.password):
-        return False
+    if not user or not verify_password(password, user.password):  # Ensure the actual password value is accessed
+        return None
     return user
