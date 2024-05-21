@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime
 from typing import Annotated, Optional
 from fastapi import FastAPI, HTTPException, Depends, Security, status
 from fastapi.responses import JSONResponse
@@ -16,7 +16,7 @@ from app.Templates.Service.templateService import TemplateService
 from app.Submission.Repository.submissionRepoAsync import SubmissionRepositoryAsync
 from app.Submission.Service.submissionService import SubmissionService
 from app.Templates.Repository.templateRepoAsync import TemplateRepositoryAsync
-from app.database import async_engine, SessionLocal as async_session, get_async_db
+from app.database import async_engine, SessionLocal as async_session
 from app.Organisation.Repository.organisationRepo import OrganisationRepository
 from app.Admin.Repository.adminRepoAsync import AdminRepositoryAsync
 from app.Course.Repository.courseRepoAsync import CourseRepositoryAsync
@@ -39,10 +39,12 @@ from app.utils import (
     authenticate_user,
     create_access_token,
     create_refresh_token,
+    get_async_db,
     get_hashed_password,
     verify_password,
 )
 from app.auth_bearer import ALGORITHM, JWT_SECRET_KEY, JWTBearer
+from pydantic import BaseModel, Field
 
 load_dotenv()
 openai_api_key=os.getenv('OPENAI_API_KEY', 'YourAPIKey')
@@ -751,7 +753,7 @@ app.add_event_handler("startup", startup_event)
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 @app.post("/register", response_model=UserCreate)
 async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_db)):
@@ -779,7 +781,6 @@ async def authenticate_user(db: AsyncSession, username: str, password: str) -> O
     if user and verify_password(password, user.hashed_password):
         return user
     return None
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 @app.post("/login", response_model=TokenCreate)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_async_db)):

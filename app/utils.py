@@ -7,8 +7,12 @@ from typing import Optional, Union, Any
 import jwt
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import SessionLocal, async_engine, Base, get_async_db
+from app.database import async_engine, SessionLocal as async_session
 from app.models import User 
+
+async def get_async_db():
+    async with async_session() as session:
+        yield session
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
 REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
@@ -55,6 +59,7 @@ credentials_exception = HTTPException(
     detail="Could not validate credentials",
     headers={"WWW-Authenticate": "Bearer"},
 )
+
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_async_db)):
     try:
