@@ -16,7 +16,7 @@ from app.Templates.Service.templateService import TemplateService
 from app.Submission.Repository.submissionRepoAsync import SubmissionRepositoryAsync
 from app.Submission.Service.submissionService import SubmissionService
 from app.Templates.Repository.templateRepoAsync import TemplateRepositoryAsync
-from app.database import async_engine, SessionLocal as async_session
+from app.database import async_engine, SessionLocal as async_session, get_async_db
 from app.Organisation.Repository.organisationRepo import OrganisationRepository
 from app.Admin.Repository.adminRepoAsync import AdminRepositoryAsync
 from app.Course.Repository.courseRepoAsync import CourseRepositoryAsync
@@ -58,9 +58,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-async def get_async_db():
-    async with async_session() as session:
-        yield session
 
 
 # No need for db_dependency annotation

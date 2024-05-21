@@ -7,8 +7,7 @@ from typing import Optional, Union, Any
 import jwt
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import SessionLocal, async_engine, Base
-from app.main import get_async_db
+from app.database import SessionLocal, async_engine, Base, get_async_db
 from app.models import User 
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 30 minutes
