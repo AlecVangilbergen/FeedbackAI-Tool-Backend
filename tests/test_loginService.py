@@ -12,7 +12,7 @@ class MockUserRepository:
     async def get_user_by_name(self, username: str) -> UserReadModel | None:
         if username == "test":
             hashed_pw = self.get_hashed_password("test")
-            return UserReadModel("test", hashed_pw)
+            return UserReadModel("test", "test@gmail.com", hashed_pw)
         else:
             return None
         

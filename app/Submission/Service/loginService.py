@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import logging
 from typing import Optional, cast, Protocol, Self
 import bcrypt
+from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.context import CryptContext
@@ -11,6 +12,7 @@ from app.models import User
 @dataclass
 class UserReadModel:
     username: str
+    email: EmailStr
     hashed_password: str
 
 
@@ -33,12 +35,23 @@ class UserRepository:
         if maybe_user:
             username = cast(str, maybe_user.username)
             pw = cast(str, maybe_user.hashed_password)
-            return UserReadModel(username, pw)
+            email = cast(EmailStr, maybe_user.email)
+            return UserReadModel(username,email, pw)
         
-    async def get_user_by_email(self, username: str) -> UserReadModel | None:
-        ...
-    
-    async def save_new_user()
+    async def get_user_by_email(self, email: EmailStr) -> UserReadModel | None:
+        query = select(User).where(User.email == email)
+        result = await self.session.execute(query)
+        maybe_existing_user = result.scalars().first()
+        if maybe_existing_user:
+            username = cast(str, maybe_existing_user.username)
+            pw = cast(str, maybe_existing_user.hashed_password)
+            email = cast(EmailStr, maybe_existing_user.email)
+            return UserReadModel(username,email, pw)
+
+    async def save_new_user(self):
+        query = select(User).where(User.username == username, User.email == email, User.hashed_password == password)
+        if user not in UserRepository:
+
 
 
 @dataclass
