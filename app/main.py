@@ -8,7 +8,6 @@ import jwt
 from openai import models
 from requests import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from Project.tests.test_submission_service import db_session
 from app.Admin.Service.adminService import AdminService
 from app.Assignment.Service.assignmentService import AssignmentService, UniqueAssignmentTitlePerCourseException, unique_assignment_title_per_course_id_combination_exception_handler
 from app.Course.Service.courseService import CourseService, UniqueCourseNameAndTeacherIdCombinationExcepton, unique_course_name_and_teacher_id_combination_exception_handler
@@ -37,7 +36,6 @@ from dotenv import load_dotenv
 import os
 from app.utils import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
-    authenticate_user,
     create_access_token,
     create_refresh_token,
     get_async_db,
@@ -47,6 +45,7 @@ from app.utils import (
 )
 from app.auth_bearer import ALGORITHM, JWT_SECRET_KEY, JWTBearer
 from pydantic import BaseModel, Field
+from app.Submission.Service.loginService import AuthService, UserRepository
 
 load_dotenv()
 openai_api_key=os.getenv('OPENAI_API_KEY', 'YourAPIKey')
@@ -773,24 +772,11 @@ async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_d
     
     return new_user
 
-async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[User]:
-    logging.info(f"Authenticating user: {username}")
-    query = select(User).where(User.email == username)
-    result = await db.execute(query)
-    user = result.scalars().first()
-    if user:
-        logging.info(f"User found: {user.email}")
-        if verify_password(password, user.hashed_password):
-            logging.info("Password verification successful")
-            return user
-        else:
-            logging.info("Password verification failed")
-    else:
-        logging.info("User not found")
-    return None
+
 @app.post("/login", response_model=TokenCreate)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_async_db)):
-    user = await authenticate_user(db, form_data.username, form_data.password)
+    service = AuthService.from_session(db)
+    user = await service.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

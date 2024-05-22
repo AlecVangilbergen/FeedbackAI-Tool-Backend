@@ -1,5 +1,4 @@
 from sqlalchemy import TIMESTAMP, Boolean, UniqueConstraint, create_engine, Column, Integer, String, ForeignKey, Text, DateTime
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from app.database import async_engine, Base

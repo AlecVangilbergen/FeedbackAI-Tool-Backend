@@ -9,6 +9,7 @@ from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import async_engine, SessionLocal as async_session
 from app.models import User 
+import bcrypt
 
 async def get_async_db():
     async with async_session() as session:
@@ -20,13 +21,13 @@ ALGORITHM = "HS256"
 JWT_SECRET_KEY = "narscbjim@$@&^@&%^&RFghgjvbdsha"   # should be kept secret
 
 
-password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_hashed_password(password: str) -> str:
-    return password_context.hash(password)
+    return bcrypt.hashpw(str.encode(password), bcrypt.gensalt()).decode("utf-8")
+
 
 def verify_password(password: str, hashed_pass: str) -> bool:
-    return password_context.verify(password, hashed_pass)
+    return bcrypt.checkpw(str.encode(password), str.encode(hashed_pass))
 
 def create_access_token(subject: Union[str, Any]) -> str:
     expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
