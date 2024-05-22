@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 from typing import Annotated, Optional
 from fastapi import FastAPI, HTTPException, Depends, Security, status
 from fastapi.responses import JSONResponse
@@ -28,7 +29,7 @@ from app.Admin.Service.adminService import AdminService, AdminAlreadyExistsExcep
 from app.Student.Service.studentService import StudentService, StudentAlreadyExistsException, StudentNotFoundException, StudentIdNotFoundException, NoStudentsFoundException
 from app.Teacher.Service.teacherService import TeacherService, TeacherAlreadyExistsException, TeacherNotFoundException, TeacherIdNotFoundException, NoTeachersFoundException
 from app.exceptions import EntityNotFoundException, entity_not_found_exception
-from app.schemas import CreateTemplate, Organisation, CreateOrganisation, CreateAdmin, CreateTeacher, CreateCourse, CreateAssignment, UpdateTeacher, CreateSubmission, CreateStudent, UserCreate, UserLogin, TokenCreate, TokenSchema
+from app.schemas import CreateTemplate, Organisation, CreateOrganisation, CreateAdmin, CreateTeacher, CreateCourse, CreateAssignment, UpdateTeacher, CreateSubmission, CreateStudent, UserCreate, UserLogin, TokenCreate, TokenSchema, UserResponse
 import asyncio
 from app.models import Base, User
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,6 +41,7 @@ from app.utils import (
     create_access_token,
     create_refresh_token,
     get_async_db,
+    get_current_user,
     get_hashed_password,
     verify_password,
 )
@@ -753,9 +755,7 @@ app.add_event_handler("startup", startup_event)
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-@app.post("/register", response_model=UserCreate)
+@app.post("/register", response_model=UserResponse)
 async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_db)):
     query = select(User).where(User.email == user.email)
     result = await db.execute(query)
@@ -765,7 +765,7 @@ async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_d
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
     hashed_password = get_hashed_password(user.password)
-    new_user = User(email=user.email, hashed_password=hashed_password)
+    new_user = User(username=user.username, email=user.email, hashed_password=hashed_password, role=user.role)
     
     db.add(new_user)
     await db.commit()
@@ -773,15 +773,21 @@ async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_d
     
     return new_user
 
-
 async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[User]:
+    logging.info(f"Authenticating user: {username}")
     query = select(User).where(User.email == username)
     result = await db.execute(query)
     user = result.scalars().first()
-    if user and verify_password(password, user.hashed_password):
-        return user
+    if user:
+        logging.info(f"User found: {user.email}")
+        if verify_password(password, user.hashed_password):
+            logging.info("Password verification successful")
+            return user
+        else:
+            logging.info("Password verification failed")
+    else:
+        logging.info("User not found")
     return None
-
 @app.post("/login", response_model=TokenCreate)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_async_db)):
     user = await authenticate_user(db, form_data.username, form_data.password)
@@ -796,18 +802,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     refresh_token = create_refresh_token(subject=user.username)
     
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
-@app.get("/users/me")
-async def read_users_me(token: str = Security(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except jwt.PyJWTError:
-        raise credentials_exception
-    return {"username": username}
+
+@app.get("/users/me", response_model=UserResponse)
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user

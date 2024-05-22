@@ -1,12 +1,13 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
 
 # Command models for Login and registering
-class UserCreate (BaseModel):
+class UserCreate(BaseModel):
     username: str
-    email: str
+    email: EmailStr
     password: str
+    role: str
 class UserLogin (BaseModel):
     email: str
     password: str
@@ -15,11 +16,18 @@ class TokenSchema(BaseModel):
     refresh_token: str
     token_type: str
 class TokenCreate(BaseModel):
-    user_id: int
     access_token: str
     refresh_token: str
-    status: bool
-    created_date: datetime = Field(default_factory=datetime.utcnow)
+    token_type: str
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: EmailStr
+    role: str
+
+    class Config:
+        orm_mode = True
 # Command models for creating/updating data
 class CreateOrganisation(BaseModel):
     name: str

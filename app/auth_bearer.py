@@ -32,7 +32,7 @@ class JWTBearer(HTTPBearer):
         super(JWTBearer, self).__init__(auto_error=auto_error)
 
     async def __call__(self, request: Request):
-        credentials: HTTPAuthorizationCredentials = super.__call__(request)
+        credentials: HTTPAuthorizationCredentials = await super.__call__(request)
         if credentials:
             if not credentials.scheme == "Bearer":
                 raise HTTPException(status_code=403, detail="Invalid authentication scheme.")
@@ -43,13 +43,15 @@ class JWTBearer(HTTPBearer):
             raise HTTPException(status_code=403, detail="Invalid authorization code.")
 
 
-    def verify_jwt(self, jwttoken: str):
+    def verify_jwt(self, jwttoken: str) -> bool:
         isTokenValid: bool = False
         try:
 
             payload = jwt.decode(jwttoken, JWT_SECRET_KEY, algorithms=[ALGORITHM])
-        except:
-            payload = None
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=403, detail="Expired token.")
+        except (jwt.InvalidTokenError, Exception):
+            raise HTTPException(status_code=403, detail="Invalid token.")
         if payload:
             isTokenValid = True
         return isTokenValid
