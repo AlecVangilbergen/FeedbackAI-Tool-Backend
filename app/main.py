@@ -754,22 +754,14 @@ app.add_event_handler("startup", startup_event)
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
+
 @app.post("/register", response_model=UserResponse)
 async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_db)):
-    query = select(User).where(User.email == user.email)
-    result = await db.execute(query)
-    existing_user = result.scalars().first()
-    
-    if existing_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
-
-    hashed_password = get_hashed_password(user.password)
-    new_user = User(username=user.username, email=user.email, hashed_password=hashed_password, role=user.role)
-    
-    db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
-    
+    service = AuthService.from_session(db)
+    try:
+        new_user = await service.register_user(user.username, user.email, user.password, user.role)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     return new_user
 
 

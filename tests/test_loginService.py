@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
 
 import bcrypt
 from app.Submission.Service.loginService import AuthService, UserReadModel
@@ -8,6 +9,7 @@ import pytest
 
 @dataclass
 class MockUserRepository:
+    users: List[UserReadModel] = field(default_factory=list)
 
     async def get_user_by_name(self, username: str) -> UserReadModel | None:
         if username == "test":
@@ -15,6 +17,7 @@ class MockUserRepository:
             return UserReadModel("test", "test@gmail.com", hashed_pw)
         else:
             return None
+            
         
     def get_hashed_password(self, password: str) -> str:
         return bcrypt.hashpw(str.encode(password), bcrypt.gensalt()).decode("utf-8")

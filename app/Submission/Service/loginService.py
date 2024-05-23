@@ -5,7 +5,6 @@ import bcrypt
 from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from passlib.context import CryptContext
 from app.models import User
 
 
@@ -21,7 +20,9 @@ class IUserRepository(Protocol):
     async def get_user_by_name(self, username: str) -> UserReadModel | None:
         ...
 
-    async def get_user_by_email(self, username: str) -> UserReadModel | None:
+    async def get_user_by_email(self, email: EmailStr) -> UserReadModel | None:
+        ...
+    async def save_new_user(self, user: User) -> None:
         ...
         
 @dataclass
@@ -41,16 +42,19 @@ class UserRepository:
     async def get_user_by_email(self, email: EmailStr) -> UserReadModel | None:
         query = select(User).where(User.email == email)
         result = await self.session.execute(query)
-        maybe_existing_user = result.scalars().first()
-        if maybe_existing_user:
-            username = cast(str, maybe_existing_user.username)
-            pw = cast(str, maybe_existing_user.hashed_password)
-            email = cast(EmailStr, maybe_existing_user.email)
-            return UserReadModel(username,email, pw)
+        maybe_user = result.scalars().first()
+        if maybe_user:
+            username = cast(str, maybe_user.username)
+            pw = cast(str, maybe_user.hashed_password)
+            email = cast(EmailStr, maybe_user.email)
+            return UserReadModel(username, email, pw)
+        return None
+      
 
-    async def save_new_user(self):
-        query = select(User).where(User.username == username, User.email == email, User.hashed_password == password)
-        if user not in UserRepository:
+    async def save_new_user(self, user: User) -> None:
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
 
 
 
@@ -74,13 +78,23 @@ class AuthService:
             logging.info("User not found")
         return None
     
-    async def register_user(self):
-        ...
+    async def register_user(self, username: str, email: EmailStr, password: str, role: str) -> UserReadModel:
+        existing_user = await self.user_repo.get_user_by_email(email)
+        if existing_user:
+            raise ValueError("Email already registered")
+
+        hashed_password = self.hash_password(password)
+        new_user = User(username=username, email=email, hashed_password=hashed_password, role=role)
+        await self.user_repo.save_new_user(new_user)
+        
+        return UserReadModel(username=username, email=email, hashed_password=hashed_password)
+    
     
     @classmethod
     def from_session(cls, session: AsyncSession) -> Self:
         user_repo = UserRepository(session)
         return cls(user_repo)
-    
     def verify_password(self, password: str, hashed_pass: str) -> bool:
         return bcrypt.checkpw(str.encode(password), str.encode(hashed_pass))
+    def hash_password(self, password: str) -> str:
+        return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
