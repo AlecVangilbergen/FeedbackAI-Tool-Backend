@@ -5,7 +5,9 @@ from datetime import datetime
 # Command models for Login and registering
 class UserCreate(BaseModel):
     username: str
-    email: str
+    firstname: str
+    lastname: str
+    email: EmailStr
     password: str
     firstname: str
     lastname: str
@@ -25,6 +27,8 @@ class TokenCreate(BaseModel):
 class UserResponse(BaseModel):
     id: int
     username: str
+    firstname: str
+    lastname: str
     email: EmailStr
     role: str
 
