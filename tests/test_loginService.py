@@ -32,7 +32,7 @@ class MockUserRepository:
 async def test_authenticate_if_user_exists_and_password_same():
     repo = MockUserRepository()
     hashed_pw = repo.get_hashed_password("test")
-    repo.users.append(UserReadModel("test", "test@gmail.com", hashed_pw))
+    repo.users.append(UserReadModel("test","test","test", "test@gmail.com", hashed_pw))
     
     service = AuthService(repo)
     maybe_user = await service.authenticate_user("test", "test")
@@ -42,7 +42,7 @@ async def test_authenticate_if_user_exists_and_password_same():
 async def test_fail_authentication_if_user_exists_and_password_different():
     repo = MockUserRepository()
     hashed_pw = repo.get_hashed_password("test")
-    repo.users.append(UserReadModel("test", "test@gmail.com", hashed_pw))
+    repo.users.append(UserReadModel("test", "test","test","test@gmail.com", hashed_pw))
     
     service = AuthService(repo)
     maybe_user = await service.authenticate_user("test", "te")
@@ -59,7 +59,7 @@ async def test_fail_authentication_if_user_doesnt_exist():
 async def test_register_user_successfully():
     repo = MockUserRepository()
     service = AuthService(repo)
-    new_user = await service.register_user("new_user","new_user@gmail.com", "new_password", "user")
+    new_user = await service.register_user("new_user","test","test","new_user@gmail.com", "new_password", "user")
     assert new_user is not None
     assert new_user.username == "new_user"
     assert new_user.email == "new_user@gmail.com"
@@ -69,11 +69,11 @@ async def test_register_user_successfully():
 async def test_register_user_fail_if_email_exists():
     repo = MockUserRepository()
     hashed_pw = repo.get_hashed_password("existing_password")
-    repo.users.append(UserReadModel("existing_user", "existing@gmail.com", hashed_pw))
+    repo.users.append(UserReadModel("existing_user","test","test", "existing@gmail.com", hashed_pw))
     
     service = AuthService(repo)
     with pytest.raises(ValueError) as exc_info:
-        await service.register_user("new_user", "existing@gmail.com", "new_password", "user")
+        await service.register_user("new_user","test","test", "existing@gmail.com", "new_password", "user")
     assert str(exc_info.value) == "Email already registered"
 
 @pytest.mark.asyncio
@@ -81,8 +81,8 @@ async def test_authenticate_multiple_users():
     repo = MockUserRepository()
     hashed_pw_1 = repo.get_hashed_password("password1")
     hashed_pw_2 = repo.get_hashed_password("password2")
-    repo.users.append(UserReadModel("user1", "user1@gmail.com", hashed_pw_1))
-    repo.users.append(UserReadModel("user2", "user2@gmail.com", hashed_pw_2))
+    repo.users.append(UserReadModel("user1","test","test", "user1@gmail.com", hashed_pw_1))
+    repo.users.append(UserReadModel("user2","test","test", "user2@gmail.com", hashed_pw_2))
     
     service = AuthService(repo)
     user1 = await service.authenticate_user("user1", "password1")
@@ -91,11 +91,12 @@ async def test_authenticate_multiple_users():
     assert user2 is not None
     assert user1.username == "user1"
     assert user2.username == "user2"
+
 @pytest.mark.asyncio
 async def test_authentication_fail_after_successful_registration_with_wrong_password():
     repo = MockUserRepository()
     service = AuthService(repo)
-    await service.register_user("new_user", "new_user@gmail.com", "correct_password", "user")
+    await service.register_user("new_user", "test","test","new_user@gmail.com", "correct_password", "user")
     
     authenticated_user = await service.authenticate_user("new_user", "wrong_password")
     assert authenticated_user is None
