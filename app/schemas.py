@@ -219,5 +219,12 @@ class UpdateTeacher(BaseModel):
     email: Optional[str] = None
     password: Optional[str] = None
     organisation_id: Optional[int] = None
+# feedback
+class ReactionCreate(BaseModel):
+    reaction: str
+class ReactionRead(BaseModel):
+    id: int
+    reaction: str
 
-    #
+    class Config:
+        orm_mode = True

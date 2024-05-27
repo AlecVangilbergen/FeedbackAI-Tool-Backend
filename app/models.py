@@ -116,3 +116,9 @@ class TokenTable(Base):
     refresh_token = Column(String, nullable=False)
     status = Column(Boolean, default=True)
     created_date = Column(DateTime, default=datetime.utcnow)
+
+class Reaction(Base):
+    __tablename__ = 'reactions'
+
+    id = Column(Integer, primary_key=True, index=True)
+    reaction = Column(String, index=True)

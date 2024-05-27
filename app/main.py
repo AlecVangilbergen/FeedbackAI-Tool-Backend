@@ -28,9 +28,9 @@ from app.Admin.Service.adminService import AdminService, AdminAlreadyExistsExcep
 from app.Student.Service.studentService import StudentService, StudentAlreadyExistsException, StudentNotFoundException, StudentIdNotFoundException, NoStudentsFoundException
 from app.Teacher.Service.teacherService import TeacherService, TeacherAlreadyExistsException, TeacherNotFoundException, TeacherIdNotFoundException, NoTeachersFoundException
 from app.exceptions import EntityNotFoundException, entity_not_found_exception
-from app.schemas import CreateTemplate, Organisation, CreateOrganisation, CreateAdmin, CreateTeacher, CreateCourse, CreateAssignment, UpdateTeacher, CreateSubmission, CreateStudent, UserCreate, UserLogin, TokenCreate, TokenSchema, UserResponse
+from app.schemas import CreateTemplate, Feedback, Organisation, CreateOrganisation, CreateAdmin, CreateTeacher, CreateCourse, CreateAssignment, ReactionCreate, ReactionRead, UpdateTeacher, CreateSubmission, CreateStudent, UserCreate, UserLogin, TokenCreate, TokenSchema, UserResponse
 import asyncio
-from app.models import Base, User
+from app.models import Base, User, Reaction
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
@@ -784,3 +784,16 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 @app.get("/users/me", response_model=UserResponse)
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@app.post("/reactions", status_code=status.HTTP_201_CREATED)
+async def submit_reaction(reaction: ReactionCreate, db: AsyncSession = Depends(get_async_db)):
+    new_reaction = Reaction(reaction=reaction.reaction)
+    db.add(new_reaction)
+    await db.commit()
+    return {"message": "Reaction submitted successfully"}
+
+@app.get("/reactions", response_model=list[ReactionRead], status_code=status.HTTP_200_OK)
+async def get_reactions(db: AsyncSession = Depends(get_async_db)):
+    result = await db.execute(select(Reaction))
+    reactions = result.scalars().all()
+    return reactions
