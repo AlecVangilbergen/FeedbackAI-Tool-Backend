@@ -759,7 +759,7 @@ from sqlalchemy.orm import selectinload
 async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_db)):
     service = AuthService.from_session(db)
     try:
-        new_user = await service.register_user(user.username, user.email, user.password, user.role)
+        new_user = await service.register_user(user.username, user.email, user.password,user.firstname, user.lastname, user.role)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     return new_user

@@ -5,8 +5,10 @@ from datetime import datetime
 # Command models for Login and registering
 class UserCreate(BaseModel):
     username: str
-    email: EmailStr
+    email: str
     password: str
+    firstname: str
+    lastname: str
     role: str
 class UserLogin (BaseModel):
     email: str
