@@ -11,6 +11,8 @@ from app.models import User
 @dataclass
 class UserReadModel:
     username: str
+    firstname: str
+    lastname: str
     email: EmailStr
     hashed_password: str
 
@@ -29,25 +31,32 @@ class IUserRepository(Protocol):
 class UserRepository:
     session: AsyncSession
 
-    async def get_user_by_name(self, username: str) -> UserReadModel | None:
+    async def get_user_by_name(self, username: str) -> Optional[UserReadModel]:
         query = select(User).where(User.username == username)
         result = await self.session.execute(query)
         maybe_user = result.scalars().first()
         if maybe_user:
-            username = cast(str, maybe_user.username)
-            pw = cast(str, maybe_user.hashed_password)
-            email = cast(EmailStr, maybe_user.email)
-            return UserReadModel(username,email, pw)
+           return UserReadModel(
+                username=cast(str, maybe_user.username),
+                firstname=cast(str, maybe_user.firstname),
+                lastname=cast(str, maybe_user.lastname),
+                email=cast(EmailStr, maybe_user.email),
+                hashed_password=cast(str, maybe_user.hashed_password)
+            )
+        return None
         
-    async def get_user_by_email(self, email: EmailStr) -> UserReadModel | None:
+    async def get_user_by_email(self, email: EmailStr) -> Optional[UserReadModel]:
         query = select(User).where(User.email == email)
         result = await self.session.execute(query)
         maybe_user = result.scalars().first()
         if maybe_user:
-            username = cast(str, maybe_user.username)
-            pw = cast(str, maybe_user.hashed_password)
-            email = cast(EmailStr, maybe_user.email)
-            return UserReadModel(username, email, pw)
+            return UserReadModel(
+                username=cast(str, maybe_user.username),
+                firstname=cast(str, maybe_user.firstname),
+                lastname=cast(str, maybe_user.lastname),
+                email=cast(EmailStr, maybe_user.email),
+                hashed_password=cast(str, maybe_user.hashed_password)
+            )
         return None
       
 
