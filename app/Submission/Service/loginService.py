@@ -86,7 +86,7 @@ class AuthService:
             logging.info("User not found")
         return None
     
-    async def register_user(self, username: str, firstname: str, lastname: str, email: EmailStr, password: str, role: str) -> UserReadModel:
+    async def register_user(self, username: str, firstname: str, lastname: str, email: EmailStr, password: str, role: str) -> User:
         existing_user = await self.user_repo.get_user_by_email(email)
         if existing_user:
             raise ValueError("Email already registered")
@@ -102,13 +102,7 @@ class AuthService:
         )
         await self.user_repo.save_new_user(new_user)
         
-        return UserReadModel(
-            username=username,
-            firstname=firstname,
-            lastname=lastname,
-            email=email,
-            hashed_password=hashed_password
-        )
+        return new_user
     
     
     

@@ -3,14 +3,13 @@ from typing import Optional, List
 from datetime import datetime
 
 # Command models for Login and registering
+
 class UserCreate(BaseModel):
     username: str
     firstname: str
     lastname: str
     email: EmailStr
     password: str
-    firstname: str
-    lastname: str
     role: str
 class UserLogin (BaseModel):
     email: str
@@ -25,7 +24,6 @@ class TokenCreate(BaseModel):
     token_type: str
 
 class UserResponse(BaseModel):
-    id: int
     username: str
     firstname: str
     lastname: str
