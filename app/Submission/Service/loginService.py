@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import logging
 from typing import Optional, cast, Protocol, Self
 import bcrypt
-from pydantic import EmailStr
+from pydantic import EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import User
@@ -16,6 +16,7 @@ class UserReadModel:
     lastname: str
     email: EmailStr
     hashed_password: str
+    role: UserRole = Field(..., description="User role, must be one of: student, teacher, admin, superuser")
 
 
 class IUserRepository(Protocol):
