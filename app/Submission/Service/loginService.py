@@ -6,6 +6,7 @@ from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import User
+from app.schemas import UserRole
 
 
 @dataclass
@@ -87,6 +88,8 @@ class AuthService:
         return None
     
     async def register_user(self, username: str, firstname: str, lastname: str, email: EmailStr, password: str, role: str) -> User:
+        if role not in {UserRole.STUDENT, UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERUSER}:
+            raise ValueError("Invalid user role")
         existing_user = await self.user_repo.get_user_by_email(email)
         if existing_user:
             raise ValueError("Email already registered")
@@ -98,7 +101,7 @@ class AuthService:
             lastname=lastname,
             email=email,
             hashed_password=hashed_password,
-            role=role
+            role=role.value
         )
         await self.user_repo.save_new_user(new_user)
         

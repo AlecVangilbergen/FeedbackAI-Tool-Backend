@@ -1,16 +1,21 @@
+from enum import Enum
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
 
 # Command models for Login and registering
-
+class UserRole(str, Enum):
+    STUDENT = "student"
+    TEACHER = "teacher"
+    ADMIN = "admin"
+    SUPERUSER = "superuser"
 class UserCreate(BaseModel):
     username: str
     firstname: str
     lastname: str
     email: EmailStr
     password: str
-    role: str
+    role: UserRole = Field(..., description="User role, must be one of: student, teacher, admin, superuser")
 class UserLogin (BaseModel):
     email: str
     password: str
