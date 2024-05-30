@@ -48,7 +48,6 @@ async def get_user(db: AsyncSession, username: str) -> Optional[User]:
     result = await db.execute(select(User).where(User.username == username))
     return result.scalars().first()
 
-
 async def authenticate_user(db: AsyncSession, username: str, password: str) -> Optional[User]:
     user = await get_user(db, username)
     if not user or not verify_password(password, user.hashed_password):
