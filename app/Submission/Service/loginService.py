@@ -72,22 +72,21 @@ class UserRepository:
 class AuthService:
     user_repo: IUserRepository
 
-
-    async def authenticate_user(self, username: str, password: str) -> Optional[UserReadModel]:
-        logging.info(f"Authenticating user: {username}")
+    async def authenticate_user(self, username: str, password: str, role: str) -> Optional[UserReadModel]:
+        logging.info(f"Authenticating user: {username} with role: {role}")
         user = await self.user_repo.get_user_by_name(username)
         if user:
             hashed_pw = cast(str, user.hashed_password)
             logging.info(f"User found: {user.username}")
-            if self.verify_password(password, hashed_pw):
-                logging.info("Password verification successful")
+            if self.verify_password(password, hashed_pw) and user.role == role:
+                logging.info("Password and role verification successful")
                 return user
             else:
-                logging.info("Password verification failed")
+                logging.info("Password or role verification failed")
         else:
             logging.info("User not found")
         return None
-    
+
     async def register_user(self, username: str, firstname: str, lastname: str, email: EmailStr, password: str, role: str) -> User:
         if role not in {UserRole.STUDENT, UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERUSER}:
             raise ValueError("Invalid user role")
@@ -107,14 +106,14 @@ class AuthService:
         await self.user_repo.save_new_user(new_user)
         
         return new_user
-    
-    
-    
+
     @classmethod
     def from_session(cls, session: AsyncSession) -> Self:
         user_repo = UserRepository(session)
         return cls(user_repo)
+    
     def verify_password(self, password: str, hashed_pass: str) -> bool:
         return bcrypt.checkpw(str.encode(password), str.encode(hashed_pass))
+    
     def hash_password(self, password: str) -> str:
         return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()

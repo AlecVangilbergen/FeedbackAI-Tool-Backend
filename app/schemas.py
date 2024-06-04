@@ -1,4 +1,5 @@
 from enum import Enum
+from fastapi import Form
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
@@ -237,3 +238,17 @@ class ReactionRead(BaseModel):
 
     class Config:
         orm_mode = True
+
+class OAuth2PasswordRequestFormWithRole(BaseModel):
+    username: str
+    password: str
+    role: str
+
+    @classmethod
+    def as_form(
+        cls,
+        username: str = Form(...),
+        password: str = Form(...),
+        role: str = Form(...)
+    ) -> 'OAuth2PasswordRequestFormWithRole':
+        return cls(username=username, password=password, role=role)

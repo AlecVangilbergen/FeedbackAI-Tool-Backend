@@ -28,7 +28,7 @@ from app.Admin.Service.adminService import AdminService, AdminAlreadyExistsExcep
 from app.Student.Service.studentService import StudentService, StudentAlreadyExistsException, StudentNotFoundException, StudentIdNotFoundException, NoStudentsFoundException
 from app.Teacher.Service.teacherService import TeacherService, TeacherAlreadyExistsException, TeacherNotFoundException, TeacherIdNotFoundException, NoTeachersFoundException
 from app.exceptions import EntityNotFoundException, entity_not_found_exception
-from app.schemas import CreateTemplate, Feedback, Organisation, CreateOrganisation, CreateAdmin, CreateTeacher, CreateCourse, CreateAssignment, ReactionCreate, ReactionRead, UpdateTeacher, CreateSubmission, CreateStudent, UserCreate, UserLogin, TokenCreate, TokenSchema, UserResponse
+from app.schemas import CreateTemplate, Feedback, OAuth2PasswordRequestFormWithRole, Organisation, CreateOrganisation, CreateAdmin, CreateTeacher, CreateCourse, CreateAssignment, ReactionCreate, ReactionRead, UpdateTeacher, CreateSubmission, CreateStudent, UserCreate, UserLogin, TokenCreate, TokenSchema, UserResponse
 import asyncio
 from app.models import Base, User, Reaction
 from fastapi.middleware.cors import CORSMiddleware
@@ -766,19 +766,22 @@ async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_d
 
 
 @app.post("/login", response_model=TokenCreate)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_async_db)):
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestFormWithRole = Depends(OAuth2PasswordRequestFormWithRole.as_form),
+    db: AsyncSession = Depends(get_async_db)
+):
     service = AuthService.from_session(db)
-    user = await service.authenticate_user(form_data.username, form_data.password)
+    user = await service.authenticate_user(form_data.username, form_data.password, form_data.role)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect username, password, or role",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     access_token = create_access_token(subject=user.username)
     refresh_token = create_refresh_token(subject=user.username)
-    
+
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "role": user.role}
 
 @app.get("/users/me", response_model=UserResponse)
