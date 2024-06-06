@@ -43,7 +43,8 @@ class UserRepository:
                 firstname=cast(str, maybe_user.firstname),
                 lastname=cast(str, maybe_user.lastname),
                 email=cast(EmailStr, maybe_user.email),
-                hashed_password=cast(str, maybe_user.hashed_password)
+                hashed_password=cast(str, maybe_user.hashed_password),
+                role=cast(UserRole, maybe_user.role)  # Ensure correct role type casting
             )
         return None
         
@@ -86,6 +87,7 @@ class AuthService:
         else:
             logging.info("User not found")
         return None
+
 
     async def register_user(self, username: str, firstname: str, lastname: str, email: EmailStr, password: str, role: str) -> User:
         if role not in {UserRole.STUDENT, UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERUSER}:
