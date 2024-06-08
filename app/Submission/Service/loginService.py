@@ -73,23 +73,24 @@ class UserRepository:
 class AuthService:
     user_repo: IUserRepository
 
-    async def authenticate_user(self, username: str, password: str, role: str) -> Optional[UserReadModel]:
-        logging.info(f"Authenticating user: {username} with role: {role}")
-        user = await self.user_repo.get_user_by_name(username)
-        if user:
-            hashed_pw = cast(str, user.hashed_password)
-            logging.info(f"User found: {user.username}")
-            if self.verify_password(password, hashed_pw) and user.role == role:
-                logging.info("Password and role verification successful")
-                return user
+    async def authenticate_user(self, username: str, password: str, role: str)-> Optional[UserReadModel]:
+            logging.info(f"Authenticating user: {username} with role: {role}")
+            user = await self.user_repo.get_user_by_name(username)
+            if user:
+                hashed_pw = cast(str, user.hashed_password)
+                logging.info(f"User found: {user.username}")
+                if self.verify_password(password, hashed_pw) and user.role in ['student', 'teacher', 'admin', 'superuser']:
+                    logging.info("Password and role verification successful")
+                    return user
+                else:
+                    logging.info("Password or role verification failed")
             else:
-                logging.info("Password or role verification failed")
-        else:
-            logging.info("User not found")
-        return None
+                logging.info("User not found")
+            return None
 
 
-    async def register_user(self, username: str, firstname: str, lastname: str, email: EmailStr, password: str, role: str) -> User:
+
+    async def register_user(self, username: str, firstname: str, lastname: str, email: EmailStr, password: str, role: UserRole) -> User:
         if role not in {UserRole.STUDENT, UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERUSER}:
             raise ValueError("Invalid user role")
         existing_user = await self.user_repo.get_user_by_email(email)
@@ -106,7 +107,6 @@ class AuthService:
             role=role.value
         )
         await self.user_repo.save_new_user(new_user)
-        
         return new_user
 
     @classmethod
