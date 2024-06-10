@@ -803,3 +803,12 @@ async def get_reactions(db: AsyncSession = Depends(get_async_db)):
     result = await db.execute(select(Reaction))
     reactions = result.scalars().all()
     return reactions
+
+
+@app.get("/profile/{username}", response_model=UserResponse)
+async def read_user_profile(username: str, db: AsyncSession = Depends(get_async_db)):
+    auth_service = AuthService.from_session(db)
+    user = await auth_service.user_repo.get_user_by_name(username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
