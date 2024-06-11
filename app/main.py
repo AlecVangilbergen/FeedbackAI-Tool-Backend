@@ -812,3 +812,4 @@ async def read_user_profile(username: str, db: AsyncSession = Depends(get_async_
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+

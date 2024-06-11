@@ -108,6 +108,7 @@ class AuthService:
         )
         await self.user_repo.save_new_user(new_user)
         return new_user
+    
 
     @classmethod
     def from_session(cls, session: AsyncSession) -> Self:
