@@ -20,7 +20,7 @@ class UserReadModel:
 
 
 class IUserRepository(Protocol):
-
+ 
     async def get_user_by_name(self, username: str) -> UserReadModel | None:
         ...
 
@@ -46,7 +46,7 @@ class UserRepository:
                 lastname=cast(str, maybe_user.lastname),
                 email=cast(EmailStr, maybe_user.email),
                 hashed_password=cast(str, maybe_user.hashed_password),
-                role=cast(UserRole, maybe_user.role)  # Ensure correct role type casting
+                role=cast(UserRole, maybe_user.role)
             )
         return None
         
@@ -91,18 +91,9 @@ class AuthService:
     user_repo: IUserRepository
 
     async def authenticate_user(self, username: str, password: str) -> Optional[UserReadModel]:
-        logging.info(f"Authenticating user: {username}")
         user = await self.user_repo.get_user_by_name(username)
-        if user:
-            hashed_pw = cast(str, user.hashed_password)
-            logging.info(f"User found: {user.username}")
-            if self.verify_password(password, hashed_pw): 
-                logging.info("Password verification successful")
-                return user  
-            else:
-                logging.info("Password verification failed")
-        else:
-            logging.info("User not found")
+        if user and self.verify_password(password, user.hashed_password):
+            return user
         return None
 
 
@@ -112,16 +103,8 @@ class AuthService:
         existing_user = await self.user_repo.get_user_by_email(email)
         if existing_user:
             raise ValueError("Email already registered")
-
         hashed_password = self.hash_password(password)
-        new_user = User(
-            username=username,
-            firstname=firstname,
-            lastname=lastname,
-            email=email,
-            hashed_password=hashed_password,
-            role=role.value
-        )
+        new_user = User(username=username, firstname=firstname, lastname=lastname, email=email, hashed_password=hashed_password, role=role.value)
         await self.user_repo.save_new_user(new_user)
         return new_user
     

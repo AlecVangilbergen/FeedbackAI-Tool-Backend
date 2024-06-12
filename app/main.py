@@ -28,7 +28,7 @@ from app.Admin.Service.adminService import AdminService, AdminAlreadyExistsExcep
 from app.Student.Service.studentService import StudentService, StudentAlreadyExistsException, StudentNotFoundException, StudentIdNotFoundException, NoStudentsFoundException
 from app.Teacher.Service.teacherService import TeacherService, TeacherAlreadyExistsException, TeacherNotFoundException, TeacherIdNotFoundException, NoTeachersFoundException
 from app.exceptions import EntityNotFoundException, entity_not_found_exception
-from app.schemas import CreateTemplate, Feedback, OAuth2PasswordRequestFormWithRole, Organisation, CreateOrganisation, CreateAdmin, CreateTeacher, CreateCourse, CreateAssignment, ReactionCreate, ReactionRead, UpdateTeacher, CreateSubmission, CreateStudent, UserCreate, UserLogin, TokenCreate, TokenSchema, UserResponse
+from app.schemas import CreateTemplate, Feedback, Organisation, CreateOrganisation, CreateAdmin, CreateTeacher, CreateCourse, CreateAssignment, ReactionCreate, ReactionRead, UpdateTeacher, CreateSubmission, CreateStudent, UserCreate, UserLogin, TokenCreate, TokenSchema, UserResponse
 import asyncio
 from app.models import Base, User, Reaction
 from fastapi.middleware.cors import CORSMiddleware

@@ -1,14 +1,13 @@
-import jwt
-from jwt.exceptions import InvalidTokenError
-from fastapi import Request, HTTPException
-from fastapi import FastAPI, Depends, HTTPException, status
+from typing import Optional
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Generic, Optional
 from datetime import datetime, timedelta
+import jwt
 
 ALGORITHM = "HS256"
-
 JWT_SECRET_KEY = "narscbjim@$@&^@&%^&RFghgjvbdsha"
+
+app = FastAPI()
 
 def generate_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -42,11 +41,9 @@ class JWTBearer(HTTPBearer):
         else:
             raise HTTPException(status_code=403, detail="Invalid authorization code.")
 
-
     def verify_jwt(self, jwttoken: str) -> bool:
         isTokenValid: bool = False
         try:
-
             payload = jwt.decode(jwttoken, JWT_SECRET_KEY, algorithms=[ALGORITHM])
         except jwt.ExpiredSignatureError:
             raise HTTPException(status_code=403, detail="Expired token.")
@@ -55,5 +52,3 @@ class JWTBearer(HTTPBearer):
         if payload:
             isTokenValid = True
         return isTokenValid
-
-
