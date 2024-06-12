@@ -65,6 +65,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
+        role: str = payload.get("role")  # Fetch role from payload
         if username is None:
             raise credentials_exception
     except jwt.ExpiredSignatureError:
@@ -75,4 +76,4 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     user = await get_user(db, username)
     if user is None:
         raise credentials_exception
-    return user
+    return user, role

@@ -3,6 +3,7 @@ from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from app.database import async_engine, Base
 from datetime import datetime, timezone
+from sqlalchemy import event
 
 class Organisation(Base):
     __tablename__ = "organisations"
@@ -124,3 +125,28 @@ class Reaction(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     reaction = Column(String, index=True)
+
+    
+@event.listens_for(Teacher, "after_insert")
+def create_user_record_for_teacher(mapper, connection, target):
+    user = User(
+        username=target.email,
+        firstname=target.name,
+        lastname=target.lastname,
+        email=target.email,
+        hashed_password=target.password,
+        role="teacher"
+    )
+    connection.execute(User.__table__.insert(), user.__dict__)
+
+@event.listens_for(Student, "after_insert")
+def create_user_record_for_student(mapper, connection, target):
+    user = User(
+        username=target.email,
+        firstname=target.name,
+        lastname=target.lastname,
+        email=target.email,
+        hashed_password=target.password,
+        role="student"
+    )
+    connection.execute(User.__table__.insert(), user.__dict__)

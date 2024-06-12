@@ -36,6 +36,7 @@ from dotenv import load_dotenv
 import os
 from app.utils import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
+    authenticate_user,
     create_access_token,
     create_refresh_token,
     get_async_db,
@@ -765,28 +766,25 @@ async def register_user(user: UserCreate, db: AsyncSession = Depends(get_async_d
     return new_user
 
 @app.post("/login", response_model=TokenCreate)
-async def login_for_access_token(
-    form_data: OAuth2PasswordRequestFormWithRole = Depends(OAuth2PasswordRequestFormWithRole.as_form),
-    db: AsyncSession = Depends(get_async_db)
-):
-    logging.info(f"Received login data: {form_data}")
-
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_async_db)):
+    user = await authenticate_user(db, form_data.username, form_data.password)
     service = AuthService.from_session(db)
-    user = await service.authenticate_user(form_data.username, form_data.password, form_data.role)
+    user = await service.authenticate_user(form_data.username, form_data.password)
     if not user:
-        logging.error(f"Authentication failed for user {form_data.username} with role {form_data.role}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username, password, or role",
+            detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    logging.info(f"Authenticated user: {user.username} with role: {user.role}")
-
-    access_token = create_access_token(subject=user.username)
+    
+    access_token_payload = {
+        "sub": user.username,
+        "role": user.role 
+    }
+    access_token = create_access_token(access_token_payload)
     refresh_token = create_refresh_token(subject=user.username)
-
-    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "role": user.role}
+    
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
 
 @app.get("/users/me", response_model=UserResponse)
