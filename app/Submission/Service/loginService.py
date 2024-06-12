@@ -26,6 +26,8 @@ class IUserRepository(Protocol):
 
     async def get_user_by_email(self, email: EmailStr) -> UserReadModel | None:
         ...
+    async def get_user_by_id(self, user_id: int) -> UserReadModel | None:
+        ...
     async def save_new_user(self, user: User) -> None:
         ...
         
@@ -59,6 +61,21 @@ class UserRepository:
                 lastname=cast(str, maybe_user.lastname),
                 email=cast(EmailStr, maybe_user.email),
                 hashed_password=cast(str, maybe_user.hashed_password)
+            )
+        return None
+    
+    async def get_user_by_id(self, user_id: int) -> Optional[UserReadModel]:
+        query = select(User).where(User.id == user_id)
+        result = await self.session.execute(query)
+        maybe_user = result.scalars().first()
+        if maybe_user:
+            return UserReadModel(
+                username=cast(str, maybe_user.username),
+                firstname=cast(str, maybe_user.firstname),
+                lastname=cast(str, maybe_user.lastname),
+                email=cast(EmailStr, maybe_user.email),
+                hashed_password=cast(str, maybe_user.hashed_password),
+                role=cast(UserRole, maybe_user.role)  # Ensure correct role type casting
             )
         return None
 

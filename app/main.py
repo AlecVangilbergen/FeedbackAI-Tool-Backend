@@ -781,6 +781,8 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    logging.info(f"Authenticated user: {user.username} with role: {user.role}")
+
     access_token = create_access_token(subject=user.username)
     refresh_token = create_refresh_token(subject=user.username)
 
@@ -805,10 +807,10 @@ async def get_reactions(db: AsyncSession = Depends(get_async_db)):
     return reactions
 
 
-@app.get("/profile/{username}", response_model=UserResponse)
-async def read_user_profile(username: str, db: AsyncSession = Depends(get_async_db)):
+@app.get("/profile/{user_id}", response_model=UserResponse)
+async def read_user_profile(user_id: int, db: AsyncSession = Depends(get_async_db)):
     auth_service = AuthService.from_session(db)
-    user = await auth_service.user_repo.get_user_by_name(username)
+    user = await auth_service.user_repo.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
