@@ -34,7 +34,7 @@ class UserResponse(BaseModel):
     firstname: str
     lastname: str
     email: EmailStr
-    role: str
+    role: UserRole
 
     class Config:
         orm_mode = True
@@ -242,13 +242,12 @@ class ReactionRead(BaseModel):
 class OAuth2PasswordRequestFormWithRole(BaseModel):
     username: str
     password: str
-    role: str
-
+    role: UserRole
     @classmethod
     def as_form(
         cls,
         username: str = Form(...),
         password: str = Form(...),
-        role: str = Form(...)
-    ) -> 'OAuth2PasswordRequestFormWithRole':
+        role: UserRole = Form(...)
+    ) -> "OAuth2PasswordRequestFormWithRole":
         return cls(username=username, password=password, role=role)
