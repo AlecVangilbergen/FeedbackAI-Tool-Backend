@@ -5,7 +5,7 @@ from typing import Optional, List, Literal
 from datetime import datetime
 from dataclasses import dataclass
 # Command models for Login and registering
-UserRole = Literal['Student', 'Teacher', "admin", 'Superuser']
+UserRole = Literal['student', 'teacher', "admin", 'superuser']
 
 class UserCreate(BaseModel):
     username: str
@@ -13,7 +13,7 @@ class UserCreate(BaseModel):
     lastname: str
     email: EmailStr
     password: str
-    role: UserRole = Field(..., description="User role, must be one of: student, teacher, admin, superuser")
+    role: UserRole
 class UserLogin (BaseModel):
     email: str
     password: str
