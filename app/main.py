@@ -812,5 +812,11 @@ async def read_user_profile(user_id: int, db: AsyncSession = Depends(get_async_d
     user = await auth_service.user_repo.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user
+    return UserResponse(
+        username=user.username,
+        firstname=user.firstname,
+        lastname=user.lastname,
+        email=user.email,
+        role=user.role
+    )
 

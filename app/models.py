@@ -91,7 +91,7 @@ class Submission(Base):
 class Feedback(Base):
     __tablename__ = "feedback"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
     submission_id = Column(Integer, ForeignKey("submissions.id"), nullable=False)
     content = Column(Text, nullable=False)
     submission = relationship("Submission", back_populates="feedback")
@@ -99,9 +99,9 @@ class Feedback(Base):
 class Admin(Base):
     __tablename__ = "admins"
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    username: Mapped[str] = mapped_column(unique=True, nullable=False, index=True)
+    password: Mapped[str] = mapped_column(nullable=False)
     role = Column(String, default="admin")
 
 class User(Base):
@@ -118,17 +118,17 @@ class User(Base):
 
 class TokenTable(Base):
     __tablename__ = "token"
-    user_id = Column(Integer)
-    access_token = Column(String, primary_key=True)
-    refresh_token = Column(String, nullable=False)
-    status = Column(Boolean, default=True)
-    created_date = Column(DateTime, default=datetime.utcnow)
+    user_id : Mapped[int]
+    access_token : Mapped[str] = mapped_column( primary_key=True)
+    refresh_token: Mapped[str] = mapped_column(nullable=False)
+    status: Mapped[bool] = mapped_column(default=True)
+    created_date : Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 class Reaction(Base):
     __tablename__ = 'reactions'
 
-    id = Column(Integer, primary_key=True, index=True)
-    reaction = Column(String, index=True)
+    id : Mapped[int] = mapped_column(primary_key=True, index=True)
+    reaction : Mapped[str] = mapped_column(index=True)
 
     
 @event.listens_for(Teacher, "after_insert")
