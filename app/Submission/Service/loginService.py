@@ -16,7 +16,17 @@ class UserReadModel:
     lastname: str
     email: EmailStr
     hashed_password: str
-    role: UserRole = Field(..., description="User role, must be one of: student, teacher, admin, superuser")
+    role: UserRole
+
+    @classmethod
+    def from_db(cls, user_db_model: User) -> "UserReadModel":
+            return cls(
+                username=user_db_model.username,
+                firstname=user_db_model.firstname,
+                lastname=user_db_model.lastname,
+                email=user_db_model.email,
+                hashed_password=user_db_model.hashed_password,
+                role=user_db_model.role)
 
 
 class IUserRepository(Protocol):
@@ -39,45 +49,19 @@ class UserRepository:
         query = select(User).where(User.username == username)
         result = await self.session.execute(query)
         maybe_user = result.scalars().first()
-        if maybe_user:
-            return UserReadModel(
-                username=cast(str, maybe_user.username),
-                firstname=cast(str, maybe_user.firstname),
-                lastname=cast(str, maybe_user.lastname),
-                email=cast(EmailStr, maybe_user.email),
-                hashed_password=cast(str, maybe_user.hashed_password),
-                role=cast(UserRole, maybe_user.role)
-            )
-        return None
+        return UserReadModel.from_db(maybe_user) if maybe_user else None
         
     async def get_user_by_email(self, email: EmailStr) -> Optional[UserReadModel]:
         query = select(User).where(User.email == email)
         result = await self.session.execute(query)
         maybe_user = result.scalars().first()
-        if maybe_user:
-            return UserReadModel(
-                username=cast(str, maybe_user.username),
-                firstname=cast(str, maybe_user.firstname),
-                lastname=cast(str, maybe_user.lastname),
-                email=cast(EmailStr, maybe_user.email),
-                hashed_password=cast(str, maybe_user.hashed_password)
-            )
-        return None
+        return UserReadModel.from_db(maybe_user) if maybe_user else None
     
     async def get_user_by_id(self, user_id: int) -> Optional[UserReadModel]:
         query = select(User).where(User.id == user_id)
         result = await self.session.execute(query)
         maybe_user = result.scalars().first()
-        if maybe_user:
-            return UserReadModel(
-                username=cast(str, maybe_user.username),
-                firstname=cast(str, maybe_user.firstname),
-                lastname=cast(str, maybe_user.lastname),
-                email=cast(EmailStr, maybe_user.email),
-                hashed_password=cast(str, maybe_user.hashed_password),
-                role=cast(UserRole, maybe_user.role)  # Ensure correct role type casting
-            )
-        return None
+        return UserReadModel.from_db(maybe_user) if maybe_user else None
 
     async def save_new_user(self, user: User) -> None:
         self.session.add(user)
@@ -98,13 +82,12 @@ class AuthService:
 
 
     async def register_user(self, username: str, firstname: str, lastname: str, email: EmailStr, password: str, role: UserRole) -> User:
-        if role not in {UserRole.STUDENT, UserRole.TEACHER, UserRole.ADMIN, UserRole.SUPERUSER}:
-            raise ValueError("Invalid user role")
+
         existing_user = await self.user_repo.get_user_by_email(email)
         if existing_user:
             raise ValueError("Email already registered")
         hashed_password = self.hash_password(password)
-        new_user = User(username=username, firstname=firstname, lastname=lastname, email=email, hashed_password=hashed_password, role=role.value)
+        new_user = User(username=username, firstname=firstname, lastname=lastname, email=email, hashed_password=hashed_password, role=role)
         await self.user_repo.save_new_user(new_user)
         return new_user
     

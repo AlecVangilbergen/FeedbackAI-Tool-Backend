@@ -1,9 +1,11 @@
 from sqlalchemy import TIMESTAMP, Boolean, UniqueConstraint, create_engine, Column, Integer, String, ForeignKey, Text, DateTime
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker, relationship, Mapped, mapped_column
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from app.database import async_engine, Base
 from datetime import datetime, timezone
 from sqlalchemy import event
+
+from app.schemas import UserRole
 
 class Organisation(Base):
     __tablename__ = "organisations"
@@ -101,17 +103,19 @@ class Admin(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
     role = Column(String, default="admin")
+
 class User(Base):
     __tablename__ = 'users'
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, nullable=False)
-    firstname = Column(String, nullable=False)
-    lastname = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    role = Column(String, nullable=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    username: Mapped[str] = mapped_column(unique=True, nullable=False)
+    firstname: Mapped[str] = mapped_column(unique=True, nullable=False) 
+    lastname: Mapped[str] = mapped_column(unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(unique=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(nullable=False)
+    role: Mapped[UserRole] = mapped_column(String(30), nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
 class TokenTable(Base):
     __tablename__ = "token"
     user_id = Column(Integer)

@@ -75,7 +75,7 @@ async def root():
 
 
 @app.exception_handler(AlreadyExistsException)
-async def already_exists_exception_handler(request, exc):
+async def already_exists_exception_handler(request, exc): # type: ignore
     return JSONResponse(
         status_code=400,
         content={"message": f"Organisation with name '{exc.name}' already exists"},
@@ -194,9 +194,9 @@ async def already_exists_exception_handler(request, exc):
     )
 
 
-app.add_exception_handler(UniqueCourseNameAndTeacherIdCombinationExcepton, unique_course_name_and_teacher_id_combination_exception_handler)
-app.add_exception_handler(EntityNotFoundException, entity_not_found_exception)
-app.add_exception_handler(UniqueAssignmentTitlePerCourseException, unique_assignment_title_per_course_id_combination_exception_handler)
+app.add_exception_handler(UniqueCourseNameAndTeacherIdCombinationExcepton, unique_course_name_and_teacher_id_combination_exception_handler) # type: ignore
+app.add_exception_handler(EntityNotFoundException, entity_not_found_exception) # type: ignore
+app.add_exception_handler(UniqueAssignmentTitlePerCourseException, unique_assignment_title_per_course_id_combination_exception_handler) # type: ignore
 
 # ORGANISATION
 @app.post("/organisation/add", status_code=status.HTTP_201_CREATED)
@@ -698,7 +698,7 @@ async def student_submit_assignment(submission: CreateSubmission, db: AsyncSessi
         HTTPException: If an error occurs during the submission process.
     """
     submission_service = SubmissionService.from_async_repo_and_open_ai_feedback_generator(session=db)
-    feedback = await submission_service.student_submit_assignment(submission)
+    feedback = await submission_service.student_submit_assignment(submission) # type: ignore
     return feedback
     
 
@@ -783,8 +783,9 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     }
     access_token = create_access_token(access_token_payload)
     refresh_token = create_refresh_token(subject=user.username)
+    print(user.role)
     
-    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "role": user.role}
 
 
 @app.get("/users/me", response_model=UserResponse)

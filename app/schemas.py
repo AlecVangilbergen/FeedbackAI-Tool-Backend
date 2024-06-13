@@ -1,15 +1,12 @@
 from enum import Enum
 from fastapi import Form
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
-
+from dataclasses import dataclass
 # Command models for Login and registering
-class UserRole(str, Enum):
-    STUDENT = "student"
-    TEACHER = "teacher"
-    ADMIN = "admin"
-    SUPERUSER = "superuser"
+UserRole = Literal['Student', 'Teacher', "admin", 'Superuser']
+
 class UserCreate(BaseModel):
     username: str
     firstname: str
@@ -24,12 +21,16 @@ class TokenSchema(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str
-class TokenCreate(BaseModel):
+
+@dataclass
+class TokenCreate:
     access_token: str
     refresh_token: str
     token_type: str
-
-class UserResponse(BaseModel):
+    role: UserRole
+    
+@dataclass
+class UserResponse:
     username: str
     firstname: str
     lastname: str
@@ -232,6 +233,7 @@ class UpdateTeacher(BaseModel):
 # feedback
 class ReactionCreate(BaseModel):
     reaction: str
+
 class ReactionRead(BaseModel):
     id: int
     reaction: str
