@@ -31,6 +31,7 @@ class TokenCreate:
     
 @dataclass
 class UserResponse:
+    id: int
     username: str
     firstname: str
     lastname: str

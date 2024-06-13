@@ -11,6 +11,7 @@ from app.schemas import UserRole
 
 @dataclass
 class UserReadModel:
+    id: int
     username: str
     firstname: str
     lastname: str
@@ -21,6 +22,7 @@ class UserReadModel:
     @classmethod
     def from_db(cls, user_db_model: User) -> "UserReadModel":
             return cls(
+                id=user_db_model.id,
                 username=user_db_model.username,
                 firstname=user_db_model.firstname,
                 lastname=user_db_model.lastname,

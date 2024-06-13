@@ -779,6 +779,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     
     access_token_payload = {
         "sub": user.username,
+        "user_id": user.id,
         "role": user.role 
     }
     access_token = create_access_token(access_token_payload)
@@ -813,10 +814,10 @@ async def read_user_profile(user_id: int, db: AsyncSession = Depends(get_async_d
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return UserResponse(
+        id= user.id,
         username=user.username,
         firstname=user.firstname,
         lastname=user.lastname,
         email=user.email,
         role=user.role
     )
-
